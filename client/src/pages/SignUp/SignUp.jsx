@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { TbFidgetSpinner } from 'react-icons/tb';
 import { toast } from 'react-hot-toast'
 import { FcGoogle } from 'react-icons/fc'
@@ -13,9 +13,45 @@ const SignUp = () => {
     signInWithGoogle,
     updateUserProfile
  } = useContext(AuthContext)
-
+ const navigate = useNavigate()
+ const from = location.state?.from?.pathname || '/'
     // handle signup
-    
+     const handleSubmit = e =>{
+        e.preventDefault()
+        const form = e.target;
+        const name = form.name.value;
+        const email = form.email.value;
+        const password = form.password.value;
+        //Image Upload
+        const image = form.image.files[0];
+        const formData = new FormData()
+        formData.append('image',image)
+        const url = `https://api.imgbb.com/1/upload?key=${import.meta.env.VITE_IMGDB_KEY}`
+        fetch(url,{
+            method:'POST',
+            body: formData
+        })
+        .then(res=>res.json())
+        .then(imgData=>{
+            const imageurl = imgData.data.display_url
+            createUser(email,password)
+            .then( result=> {
+                updateUserProfile(name,imageurl)
+                .then( ()=> {
+                    toast.success('SignUp Successfully')
+                    navigate(from,{replace:true})
+                })
+                .catch(err=>{
+                    toast.error(err.message)
+                    setLoading(false)
+                })
+            })
+            .catch(err=>{
+                toast.error(err.message)
+                setLoading(false)
+            })
+        })
+     }
 
     // Handle Google signIn
     const handleGoogleSignIn = ()=>{
@@ -37,6 +73,7 @@ const SignUp = () => {
           <p className='text-sm text-gray-400'>Welcome to AirCNC</p>
         </div>
         <form
+          onSubmit={handleSubmit}
           noValidate=''
           action=''
           className='space-y-6 ng-untouched ng-pristine ng-valid'
